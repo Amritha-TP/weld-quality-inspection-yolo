@@ -144,10 +144,17 @@ def detect_frame():
 
 
 if __name__ == '__main__':
+    import os
+
     print("=" * 60)
     print("      WELD QUALITY INSPECTION — YOLO AI SYSTEM SERVER      ")
     print("============================================================")
     print(f"Model Path: {config.MODEL_PATH}")
-    print(f"Server URL: http://localhost:5000 / http://127.0.0.1:5000")
     print("============================================================")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+
+    # Render provides the port via environment variable
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Server running on port: {port}")
+    print("============================================================")
+
+    app.run(host='0.0.0.0', port=port, debug=False)
