@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weld Quality Inspection — YOLO AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- TOP INDUSTRIAL HEADER -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="brand-icon">⚡</div>
+                <div>
+                    <h1 class="app-title">WELD QUALITY INSPECTION</h1>
+                    <p class="app-subtitle">YOLO AI COMPUTER VISION SYSTEM</p>
+                </div>
+            </div>
+
+            <div class="header-status-bar">
+                <div class="status-badge {{ 'status-ready' if model_loaded else 'status-error' }}" id="model-status-badge">
+                    <span class="status-dot"></span>
+                    <span id="model-status-text">YOLO MODEL: {{ 'READY' if model_loaded else 'ERROR' }}</span>
+                </div>
+                <div class="status-badge status-device">
+                    <span class="device-icon">💻</span>
+                    <span>DEVICE: <strong id="device-tag">{{ device }}</strong></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- GLOBAL CONFIGURATION BAR -->
+        <section class="config-bar card">
+            <div class="config-item slider-container">
+                <label for="conf-slider">
+                    <span>Confidence Threshold:</span>
+                    <strong id="conf-val-display">{{ (default_conf * 100)|int }}%</strong>
+                    <span class="conf-decimal">({{ default_conf }})</span>
+                </label>
+                <input type="range" id="conf-slider" min="0.10" max="1.00" step="0.05" value="{{ default_conf }}">
+            </div>
+
+            <div class="config-item classes-info">
+                <span class="label">Detected Model Classes:</span>
+                <div class="class-tags" id="class-tags-container">
+                    {% if class_names %}
+                        {% for cls in class_names %}
+                            <span class="tag">{{ cls }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="tag tag-warn">No model loaded</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="config-item actions">
+                <button class="btn btn-secondary" id="btn-clear-all" onclick="resetAll()">
+                    🔄 Clear Results
+                </button>
+            </div>
+        </section>
+
+        <!-- MODE NAVIGATION TABS -->
+        <nav class="mode-tabs">
+            <button class="tab-btn active" id="tab-image-btn" onclick="switchTab('image-mode')">
+                📷 IMAGE INSPECTION MODE
+            </button>
+            <button class="tab-btn" id="tab-webcam-btn" onclick="switchTab('webcam-mode')">
+                📹 LIVE WEBCAM INSPECTION MODE
+            </button>
+        </nav>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            
+            <!-- ================= MODE 1: IMAGE INSPECTION ================= -->
+            <section id="image-mode" class="tab-content active">
+                <div class="upload-section card">
+                    <h2 class="section-title">Upload Weld Inspection Image</h2>
+                    <p class="section-desc">Select or drag & drop a weld image (.jpg, .png, .webp) for instant YOLO AI defect detection.</p>
+                    
+                    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('image-input').click()">
+                        <input type="file" id="image-input" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleFileSelect(event)">
+                        <div class="drop-zone-content" id="drop-zone-content">
+                            <div class="upload-icon">📁</div>
+                            <p class="drop-title">Drag & Drop Weld Image Here</p>
+                            <p class="drop-subtitle">or click to browse files</p>
+                            <span class="supported-formats">Supported Formats: JPG, JPEG, PNG, WEBP</span>
+                        </div>
+                        <div class="file-preview-strip" id="file-preview-strip" style="display: none;">
+                            <span class="file-name" id="selected-file-name">filename.jpg</span>
+                            <span class="file-size" id="selected-file-size">1.2 MB</span>
+                        </div>
+                    </div>
+
+                    <div class="upload-actions">
+                        <button class="btn btn-primary btn-large" id="btn-inspect-image" onclick="runImageInspection()" disabled>
+                            🔍 Inspect Weld Quality
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LOADING INDICATOR -->
+                <div class="loading-overlay" id="image-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Running YOLO Weld Inspection...</p>
+                </div>
+
+                <!-- IMAGE INSPECTION RESULTS CONTAINER -->
+                <div id="image-results-container" style="display: none;">
+                    <!-- PROMINENT OVERALL RESULT BANNER -->
+                    <div class="result-banner" id="img-result-banner">
+                        <div class="banner-icon" id="img-banner-icon">✓</div>
+                        <div class="banner-text-group">
+                            <span class="banner-subtitle">AI INSPECTION RESULT</span>
+                            <h2 class="banner-title" id="img-banner-title">GOOD WELD</h2>
+                            <p class="banner-message" id="img-banner-message">All detected weld regions meet quality standards.</p>
+                        </div>
+                    </div>
+
+                    <!-- IMAGE COMPARISON DUAL VIEW -->
+                    <div class="dual-view-grid">
+                        <div class="view-card card">
+                            <div class="card-header">
+                                <h3>ORIGINAL IMAGE</h3>
+                            </div>
+                            <div class="img-wrapper">
+                                <img id="img-original-preview" src="" alt="Original Weld Image">
+                            </div>
+                        </div>
+
+                        <div class="view-card card">
+                            <div class="card-header">
+                                <h3>YOLO AI INSPECTION</h3>
+                                <span class="badge badge-ai">BOUNDING BOXES & CONFIDENCE</span>
+                            </div>
+                            <div class="img-wrapper">
+                                <img id="img-annotated-preview" src="" alt="YOLO Annotated Inspection">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INSPECTION SUMMARY GRID -->
+                    <div class="summary-grid">
+                        <div class="summary-card card">
+                            <span class="summary-label">OVERALL QUALITY</span>
+                            <span class="summary-value" id="sum-overall">-</span>
+                        </div>
+                        <div class="summary-card card">
+                            <span class="summary-label">WELDS DETECTED</span>
+                            <span class="summary-value" id="sum-total">0</span>
+                        </div>
+                        <div class="summary-card card">
+                            <span class="summary-label">GOOD WELDS</span>
+                            <span class="summary-value text-good" id="sum-good">0</span>
+                        </div>
+                        <div class="summary-card card">
+                            <span class="summary-label">BAD / DEFECTS</span>
+                            <span class="summary-value text-bad" id="sum-bad">0</span>
+                        </div>
+                        <div class="summary-card card">
+                            <span class="summary-label">HIGHEST CONFIDENCE</span>
+                            <span class="summary-value" id="sum-conf">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- DETECTION DETAILS TABLE -->
+                    <div class="table-card card">
+                        <div class="card-header">
+                            <h3>DETECTION DETAILS TABLE</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="detections-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Detected Class</th>
+                                        <th>Quality Classification</th>
+                                        <th>Confidence Score</th>
+                                        <th>Bounding Box Coordinates [x1, y1, x2, y2]</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detections-tbody">
+                                    <!-- Dynamic rows inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= MODE 2: LIVE WEBCAM ================= -->
+            <section id="webcam-mode" class="tab-content" style="display: none;">
+                <div class="webcam-grid">
+                    <!-- WEBCAM FEED CONTAINER -->
+                    <div class="webcam-view-card card">
+                        <div class="card-header flex-between">
+                            <h3>LIVE WEBCAM STREAM</h3>
+                            <div class="cam-status-pill" id="cam-status-pill">
+                                <span class="status-dot dot-inactive" id="cam-dot"></span>
+                                <span id="cam-status-text">Camera: Disconnected</span>
+                            </div>
+                        </div>
+
+                        <div class="video-container">
+                            <video id="webcam-video" autoplay playsinline muted style="display: none;"></video>
+                            <img id="webcam-processed-stream" src="" alt="Live YOLO Stream" style="display: none;">
+                            
+                            <div class="video-placeholder" id="video-placeholder">
+                                <div class="cam-icon">🎥</div>
+                                <p>Webcam is currently inactive</p>
+                                <p class="sub-text">Click "Open Webcam" to start live feed</p>
+                            </div>
+                        </div>
+
+                        <!-- WEBCAM CONTROLS TOOLBAR -->
+                        <div class="webcam-toolbar">
+                            <button class="btn btn-primary" id="btn-open-cam" onclick="openWebcam()">
+                                📹 Open Webcam
+                            </button>
+                            <button class="btn btn-success" id="btn-start-inspect" onclick="startWebcamInspection()" disabled>
+                                ▶️ Start Inspection
+                            </button>
+                            <button class="btn btn-warning" id="btn-stop-inspect" onclick="stopWebcamInspection()" disabled>
+                                ⏸️ Stop Inspection
+                            </button>
+                            <button class="btn btn-danger" id="btn-close-cam" onclick="closeWebcam()" disabled>
+                                ⏹️ Close Webcam
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LIVE RESULT PANEL -->
+                    <div class="webcam-side-panel card">
+                        <div class="card-header">
+                            <h3>LIVE INSPECTION HUD</h3>
+                        </div>
+
+                        <div class="live-result-banner" id="live-banner">
+                            <div class="live-banner-icon" id="live-banner-icon">⏳</div>
+                            <div class="live-banner-text">
+                                <span class="live-subtitle">CURRENT STREAM STATUS</span>
+                                <h2 class="live-title" id="live-banner-title">INACTIVE</h2>
+                                <p class="live-desc" id="live-banner-desc">Open webcam and start inspection to process frames.</p>
+                            </div>
+                        </div>
+
+                        <div class="live-telemetry card-inner">
+                            <div class="telemetry-row">
+                                <span class="label">Inspection Status:</span>
+                                <span class="value" id="telemetry-status">IDLE</span>
+                            </div>
+                            <div class="telemetry-row">
+                                <span class="label">Processed FPS / Latency:</span>
+                                <span class="value" id="telemetry-fps">0 FPS / 0ms</span>
+                            </div>
+                            <div class="telemetry-row">
+                                <span class="label">Live Detections:</span>
+                                <span class="value" id="telemetry-count">0</span>
+                            </div>
+                            <div class="telemetry-row">
+                                <span class="label">Top Class:</span>
+                                <span class="value" id="telemetry-top-class">-</span>
+                            </div>
+                            <div class="telemetry-row">
+                                <span class="label">Top Confidence:</span>
+                                <span class="value" id="telemetry-conf">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="live-detections-list" id="live-detections-list">
+                            <h4>Current Frame Detections</h4>
+                            <ul class="det-list" id="live-det-ul">
+                                <li class="empty-list">No active detections</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- INDUSTRIAL DISCLAIMER FOOTER -->
+        <footer class="app-footer">
+            <p><strong>AI INSPECTION ASSISTANT DISCLAIMER:</strong> This application is an automated visual quality aid powered by YOLO computer vision. It does not replace certified quality-control or non-destructive testing (NDT) engineering procedures.</p>
+        </footer>
+    </div>
+
+    <!-- Hidden Canvas for capturing video frames -->
+    <canvas id="frame-canvas" style="display: none;"></canvas>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,1934 @@
+# ANTIGRAVITY MASTER PROMPT — YOLO GOOD WELD / BAD WELD DETECTION WEB APPLICATION
+
+## ROLE
+
+Act as a **senior computer vision engineer, YOLO developer, Python backend engineer, and frontend developer**.
+
+Build a complete, professional, locally runnable **YOLO Weld Quality Inspection Web Application**.
+
+The purpose of this application is to inspect weld images and determine whether the weld is:
+
+* **GOOD WELD**
+* **BAD WELD**
+
+I already have:
+
+1. A trained YOLO model:
+
+   ```text
+   best.pt
+   ```
+
+2. The YOLO model training/backend process is already completed.
+
+Therefore:
+
+> **DO NOT retrain the YOLO model.**
+>
+> **DO NOT create a new training pipeline.**
+>
+> **DO NOT modify the trained model.**
+
+Your job is to build the **inference application, frontend, webcam integration, image upload functionality, result visualization, and local web application** around my existing `best.pt`.
+
+The entire application must run on my local machine using `localhost`.
+
+---
+
+# 1. PRIMARY OBJECTIVE
+
+Build a web application called:
+
+# Weld Quality Inspection — YOLO AI
+
+The application must allow a user to inspect welds using two modes.
+
+## MODE 1 — IMAGE UPLOAD
+
+User workflow:
+
+```text
+Select Weld Image
+        ↓
+Upload Image
+        ↓
+YOLO best.pt
+        ↓
+Object Detection
+        ↓
+Determine Weld Quality
+        ↓
+Display GOOD / BAD
+        ↓
+Display Bounding Boxes
+        ↓
+Display Confidence Scores
+        ↓
+Display Detection Details
+```
+
+## MODE 2 — LIVE WEBCAM
+
+User workflow:
+
+```text
+Open Webcam
+        ↓
+Camera Stream
+        ↓
+Capture Frames
+        ↓
+YOLO best.pt
+        ↓
+Detect Weld
+        ↓
+GOOD / BAD
+        ↓
+Bounding Box + Confidence
+        ↓
+Live Result
+```
+
+---
+
+# 2. EXISTING MODEL
+
+I already have:
+
+```text
+best.pt
+```
+
+This is my trained YOLO model.
+
+Create a model directory:
+
+```text
+models/
+```
+
+and expect the model at:
+
+```text
+models/best.pt
+```
+
+The application must load this model.
+
+For example:
+
+```python
+from ultralytics import YOLO
+
+model = YOLO("models/best.pt")
+```
+
+Do not train anything.
+
+Do not create a new `.pt` file.
+
+Do not replace my model with a pretrained COCO model.
+
+---
+
+# 3. IMPORTANT — MODEL CLASS HANDLING
+
+Do not blindly assume the exact class IDs.
+
+When the application starts, inspect the class names available in:
+
+```text
+best.pt
+```
+
+Use the actual model class names.
+
+The application should support common configurations such as:
+
+```text
+good
+bad
+```
+
+or:
+
+```text
+good_weld
+bad_weld
+```
+
+or:
+
+```text
+Good Weld
+Bad Weld
+```
+
+Do not hard-code class IDs such as:
+
+```text
+0 = good
+1 = bad
+```
+
+unless that is actually confirmed from the model.
+
+Create a configurable mapping such as:
+
+```python
+GOOD_CLASS_NAMES = [
+    "good",
+    "good_weld",
+    "good weld"
+]
+
+BAD_CLASS_NAMES = [
+    "bad",
+    "bad_weld",
+    "bad weld"
+]
+```
+
+Make this easy to modify.
+
+Also display the actual class names detected by the model.
+
+---
+
+# 4. APPLICATION TECHNOLOGY
+
+Use the following stack.
+
+## Backend
+
+```text
+Python
+Flask
+Ultralytics YOLO
+OpenCV
+NumPy
+Pillow
+```
+
+## Frontend
+
+Use:
+
+```text
+HTML5
+CSS3
+JavaScript
+```
+
+Do not introduce React unless absolutely necessary.
+
+Keep the application simple, maintainable, and easy to run.
+
+---
+
+# 5. PROJECT STRUCTURE
+
+Create a clean project structure similar to:
+
+```text
+weld_quality_yolo/
+│
+├── app.py
+├── config.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+├── models/
+│   └── best.pt
+│
+├── uploads/
+│
+├── outputs/
+│
+├── templates/
+│   └── index.html
+│
+├── static/
+│   ├── css/
+│   │   └── style.css
+│   │
+│   └── js/
+│       └── app.js
+│
+└── utils/
+    ├── __init__.py
+    └── detector.py
+```
+
+You may improve the structure if necessary, but keep the architecture straightforward.
+
+---
+
+# 6. BACKEND — FLASK
+
+Create:
+
+```text
+app.py
+```
+
+The Flask server must run locally.
+
+Use:
+
+```text
+http://localhost:5000
+```
+
+and:
+
+```text
+http://127.0.0.1:5000
+```
+
+The application must be accessible from a normal desktop browser.
+
+---
+
+# 7. YOLO DETECTOR MODULE
+
+Create:
+
+```text
+utils/detector.py
+```
+
+Build a reusable detector class.
+
+For example:
+
+```python
+class WeldDetector:
+    def __init__(self, model_path):
+        ...
+    
+    def predict(self, image):
+        ...
+```
+
+The detector should:
+
+1. Load `best.pt`.
+2. Accept an image/frame.
+3. Run YOLO inference.
+4. Extract detections.
+5. Extract:
+
+   * class ID
+   * class name
+   * confidence
+   * bounding box
+6. Determine whether the detection represents:
+
+   * GOOD WELD
+   * BAD WELD
+7. Draw bounding boxes.
+8. Return:
+
+   * processed image
+   * detection information
+   * overall weld quality
+
+---
+
+# 8. CONFIDENCE THRESHOLD
+
+Create a configurable setting:
+
+```python
+CONFIDENCE_THRESHOLD = 0.25
+```
+
+Do not hard-code the threshold throughout the application.
+
+Put configuration in:
+
+```text
+config.py
+```
+
+For example:
+
+```python
+MODEL_PATH = "models/best.pt"
+
+CONFIDENCE_THRESHOLD = 0.25
+
+IMAGE_SIZE = 640
+```
+
+Make these easy to change.
+
+---
+
+# 9. GOOD/BAD DECISION LOGIC
+
+Implement a clear quality decision system.
+
+For each detected weld:
+
+```text
+GOOD WELD
+```
+
+or:
+
+```text
+BAD WELD
+```
+
+The application should determine the overall result.
+
+Example:
+
+```text
+Detection:
+bad_weld
+Confidence:
+94.5%
+
+Overall Result:
+BAD WELD
+```
+
+If multiple welds are detected, display each weld separately.
+
+For example:
+
+```text
+Weld #1 → GOOD WELD → 96.4%
+
+Weld #2 → BAD WELD → 91.2%
+
+Overall Inspection:
+BAD WELD
+```
+
+For multiple detections, use a conservative quality rule:
+
+> If any sufficiently confident weld is classified as BAD, the overall inspection result should be BAD.
+
+Otherwise:
+
+```text
+GOOD WELD
+```
+
+If no weld is detected, do NOT classify it as good.
+
+Instead display:
+
+```text
+NO WELD DETECTED
+```
+
+This distinction is extremely important.
+
+---
+
+# 10. IMAGE UPLOAD
+
+Create an image upload section.
+
+The user should be able to upload:
+
+```text
+.jpg
+.jpeg
+.png
+.webp
+```
+
+Provide:
+
+```text
+Choose Weld Image
+```
+
+and:
+
+```text
+Inspect Weld
+```
+
+buttons.
+
+---
+
+# 11. IMAGE PROCESSING FLOW
+
+When the user uploads an image:
+
+```text
+Browser
+   ↓
+Flask /detect
+   ↓
+Open image
+   ↓
+YOLO best.pt
+   ↓
+Detection
+   ↓
+Quality Classification
+   ↓
+Draw bounding boxes
+   ↓
+Return result
+   ↓
+Browser
+```
+
+Do not use mock data.
+
+All results must come from `best.pt`.
+
+---
+
+# 12. IMAGE RESULT UI
+
+Display the original image and processed image.
+
+For example:
+
+```text
+-------------------------------------------------
+| ORIGINAL IMAGE       | YOLO INSPECTION        |
+|                      |                        |
+|     Weld Image       | Bounding Boxes         |
+|                      | + Labels               |
+|                      | + Confidence            |
+-------------------------------------------------
+```
+
+On smaller screens, stack them vertically.
+
+---
+
+# 13. LARGE QUALITY RESULT
+
+The most important UI element should be the inspection result.
+
+If the weld is good:
+
+```text
+✓ GOOD WELD
+```
+
+If the weld is bad:
+
+```text
+✗ BAD WELD
+```
+
+If nothing is detected:
+
+```text
+! NO WELD DETECTED
+```
+
+Make the result visually prominent.
+
+Do not rely only on color.
+
+Use:
+
+* text
+* icon
+* status indicator
+
+so the result is understandable even without color.
+
+---
+
+# 14. DETECTION DETAILS
+
+Display a detection table/card.
+
+Example:
+
+```text
+DETECTION RESULTS
+
+Class          Confidence       Bounding Box
+------------------------------------------------
+good_weld      96.42%           [120, 85, 450, 310]
+```
+
+For bad weld:
+
+```text
+DETECTION RESULTS
+
+Class          Confidence       Bounding Box
+------------------------------------------------
+bad_weld       94.81%           [100, 90, 470, 325]
+```
+
+Show bounding box coordinates where appropriate.
+
+---
+
+# 15. CONFIDENCE SCORE
+
+Display confidence as a percentage.
+
+For example:
+
+```text
+96.42%
+```
+
+Do not display:
+
+```text
+0.9642
+```
+
+unless also displaying the percentage.
+
+Round to two decimal places.
+
+---
+
+# 16. WEBCAM FUNCTIONALITY
+
+Create a separate:
+
+# LIVE WELD INSPECTION
+
+section.
+
+Provide:
+
+```text
+Open Webcam
+```
+
+button.
+
+Use the browser's:
+
+```javascript
+navigator.mediaDevices.getUserMedia()
+```
+
+API.
+
+Do not require a separate webcam application.
+
+When the user clicks:
+
+```text
+Open Webcam
+```
+
+request camera permission.
+
+---
+
+# 17. WEBCAM CONTROLS
+
+Provide:
+
+```text
+Open Webcam
+Start Inspection
+Stop Inspection
+Close Webcam
+```
+
+buttons.
+
+The behavior should be:
+
+### Open Webcam
+
+Starts the browser camera.
+
+### Start Inspection
+
+Begins YOLO inference on captured webcam frames.
+
+### Stop Inspection
+
+Stops YOLO inference but does not necessarily close the camera.
+
+### Close Webcam
+
+Stops the camera and releases the media stream.
+
+---
+
+# 18. LIVE YOLO DETECTION
+
+Implement real-time webcam inspection.
+
+The browser should capture webcam frames.
+
+Send frames to the Flask backend for inference.
+
+The backend should:
+
+```text
+Receive frame
+      ↓
+Decode frame
+      ↓
+YOLO best.pt
+      ↓
+Detect weld
+      ↓
+Determine GOOD/BAD
+      ↓
+Draw bounding box
+      ↓
+Return processed frame
+```
+
+The frontend displays the returned result.
+
+---
+
+# 19. WEBCAM PERFORMANCE
+
+Optimize the webcam implementation.
+
+Do NOT send huge full-resolution frames unnecessarily.
+
+Resize webcam frames before sending them for inference.
+
+Use a reasonable frame rate.
+
+Avoid sending a new frame while the previous inference request is still running.
+
+For example:
+
+```text
+Frame
+ ↓
+Inference
+ ↓
+Result
+ ↓
+Next frame
+```
+
+rather than flooding the Flask server with hundreds of simultaneous requests.
+
+The goal is stable local performance rather than maximum FPS.
+
+---
+
+# 20. LIVE RESULT
+
+While webcam detection is running, display a large status:
+
+```text
+LIVE INSPECTION
+
+GOOD WELD
+Confidence: 97.3%
+```
+
+or:
+
+```text
+LIVE INSPECTION
+
+BAD WELD
+Confidence: 93.8%
+```
+
+or:
+
+```text
+LIVE INSPECTION
+
+NO WELD DETECTED
+```
+
+Update the result as new frames are processed.
+
+---
+
+# 21. WEBCAM STATUS
+
+Display:
+
+```text
+Camera: Connected
+Inspection: Running
+```
+
+or:
+
+```text
+Camera: Connected
+Inspection: Stopped
+```
+
+or:
+
+```text
+Camera: Disconnected
+```
+
+Handle all state changes correctly.
+
+---
+
+# 22. CAMERA PERMISSION ERROR
+
+If the browser blocks camera access, display:
+
+```text
+Camera access was denied.
+
+Please allow camera permissions in your browser and try again.
+```
+
+Do not crash the application.
+
+---
+
+# 23. FRONTEND DESIGN
+
+Create a professional industrial AI inspection interface.
+
+The visual design should feel appropriate for:
+
+```text
+Manufacturing
+Industrial Automation
+Welding Inspection
+Computer Vision
+Quality Control
+```
+
+Use a clean dashboard design.
+
+Suggested structure:
+
+```text
+====================================================
+              WELD QUALITY INSPECTION
+                  YOLO AI SYSTEM
+====================================================
+
+        AI-Powered Weld Quality Detection
+
+----------------------------------------------------
+                    IMAGE INSPECTION
+----------------------------------------------------
+
+ [ Choose Weld Image ]   [ Inspect Weld ]
+
+ Original Image       YOLO Detection
+
+              [ LARGE RESULT ]
+
+                 GOOD WELD
+
+----------------------------------------------------
+                  LIVE INSPECTION
+----------------------------------------------------
+
+              [ WEBCAM VIEW ]
+
+ [ Open Webcam ] [ Start Inspection ]
+ [ Stop Inspection ] [ Close Webcam ]
+
+              [ LIVE RESULT ]
+
+----------------------------------------------------
+
+Detection Details
+----------------------------------------------------
+Class | Confidence | Bounding Box
+
+====================================================
+```
+
+---
+
+# 24. INDUSTRIAL UI
+
+Make the UI professional.
+
+Include:
+
+* application title
+* inspection status
+* model status
+* confidence
+* detection count
+* image preview
+* webcam preview
+* detection results
+* error messages
+* loading indicator
+
+Avoid excessive animations.
+
+The application should feel like an actual inspection tool.
+
+---
+
+# 25. MODEL STATUS
+
+When the application starts, verify that:
+
+```text
+models/best.pt
+```
+
+exists.
+
+If it loads successfully, show:
+
+```text
+YOLO MODEL: READY
+```
+
+If the model cannot be loaded:
+
+```text
+YOLO MODEL: ERROR
+```
+
+and provide a useful message in the UI.
+
+The terminal should contain the actual technical error.
+
+---
+
+# 26. MODEL INFORMATION
+
+Where practical, display:
+
+```text
+Model: best.pt
+Device: CPU/GPU
+Confidence Threshold: 0.25
+```
+
+If CUDA is available, use GPU.
+
+Otherwise automatically use CPU.
+
+Do not require GPU.
+
+The application must work on a normal CPU machine.
+
+---
+
+# 27. API ENDPOINTS
+
+Create at least:
+
+```text
+GET /
+POST /detect
+POST /detect_frame
+GET /health
+```
+
+## GET /
+
+Return the frontend.
+
+## POST /detect
+
+Accept uploaded image.
+
+Run YOLO inference.
+
+Return detection result.
+
+## POST /detect_frame
+
+Accept webcam frame.
+
+Run YOLO inference.
+
+Return processed frame and detection information.
+
+## GET /health
+
+Return something similar to:
+
+```json
+{
+    "status": "healthy",
+    "model_loaded": true
+}
+```
+
+---
+
+# 28. API RESPONSE
+
+For image detection, return a clean JSON structure.
+
+Example:
+
+```json
+{
+    "success": true,
+    "overall_result": "GOOD WELD",
+    "detections": [
+        {
+            "class_name": "good_weld",
+            "confidence": 0.9642,
+            "confidence_percent": 96.42,
+            "bbox": [120, 85, 450, 310]
+        }
+    ],
+    "detection_count": 1
+}
+```
+
+For bad weld:
+
+```json
+{
+    "success": true,
+    "overall_result": "BAD WELD",
+    "detections": [
+        {
+            "class_name": "bad_weld",
+            "confidence": 0.9481,
+            "confidence_percent": 94.81,
+            "bbox": [100, 90, 470, 325]
+        }
+    ],
+    "detection_count": 1
+}
+```
+
+If no detection:
+
+```json
+{
+    "success": true,
+    "overall_result": "NO WELD DETECTED",
+    "detections": [],
+    "detection_count": 0
+}
+```
+
+---
+
+# 29. IMAGE RESPONSE
+
+For processed images, use an appropriate approach such as:
+
+```text
+Base64 image
+```
+
+or a temporary output endpoint.
+
+Choose the implementation that is reliable and simple for local use.
+
+Do not leave unnecessary temporary files indefinitely.
+
+---
+
+# 30. ERROR HANDLING
+
+Implement proper error handling.
+
+### No image selected
+
+Display:
+
+```text
+Please select a weld image first.
+```
+
+### Invalid image
+
+Display:
+
+```text
+Unable to read the selected image.
+```
+
+### Unsupported file
+
+Display:
+
+```text
+Please upload JPG, JPEG, PNG, or WEBP.
+```
+
+### Model missing
+
+Display:
+
+```text
+YOLO model not found.
+
+Please place best.pt inside:
+
+models/best.pt
+```
+
+### Model loading failure
+
+Display:
+
+```text
+Unable to load YOLO model.
+Please check the terminal for details.
+```
+
+### Webcam unavailable
+
+Display:
+
+```text
+Unable to access the webcam.
+Please check your camera connection and browser permissions.
+```
+
+---
+
+# 31. SECURITY
+
+Implement basic upload validation.
+
+Use:
+
+```python
+secure_filename
+```
+
+Validate file extension.
+
+Set a reasonable maximum upload size.
+
+Do not execute uploaded files.
+
+Only process valid image files.
+
+---
+
+# 32. CONFIGURATION
+
+Create:
+
+```text
+config.py
+```
+
+Example:
+
+```python
+MODEL_PATH = "models/best.pt"
+
+CONFIDENCE_THRESHOLD = 0.25
+
+IMAGE_SIZE = 640
+
+GOOD_CLASS_NAMES = [
+    "good",
+    "good_weld",
+    "good weld"
+]
+
+BAD_CLASS_NAMES = [
+    "bad",
+    "bad_weld",
+    "bad weld"
+]
+```
+
+Make the class mapping easy for me to change later.
+
+---
+
+# 33. DO NOT CHANGE MY TRAINING PIPELINE
+
+This is critical.
+
+I already trained the YOLO model.
+
+Do NOT create:
+
+```text
+dataset/
+train/
+val/
+labels/
+images/
+data.yaml
+```
+
+unless absolutely required by the existing inference environment.
+
+Do NOT create:
+
+```text
+train.py
+```
+
+Do NOT retrain the model.
+
+Do NOT perform augmentation.
+
+Do NOT perform model optimization unless explicitly requested.
+
+The application is an **inference and inspection application**.
+
+---
+
+# 34. DO NOT USE MOCK DETECTIONS
+
+Never hard-code:
+
+```text
+GOOD WELD = 95%
+BAD WELD = 90%
+```
+
+Never simulate bounding boxes.
+
+Never generate fake results.
+
+All results must originate from:
+
+```text
+models/best.pt
+```
+
+---
+
+# 35. FRONTEND JAVASCRIPT
+
+Create:
+
+```text
+static/js/app.js
+```
+
+Organize JavaScript into functions.
+
+Implement functions similar to:
+
+```javascript
+selectImage()
+previewImage()
+detectImage()
+openWebcam()
+startInspection()
+stopInspection()
+closeWebcam()
+sendFrameForDetection()
+displayDetectionResults()
+displayQualityResult()
+showError()
+```
+
+Do not put all JavaScript inline inside HTML.
+
+---
+
+# 36. CSS
+
+Create:
+
+```text
+static/css/style.css
+```
+
+The interface must be:
+
+* responsive
+* desktop friendly
+* tablet friendly
+* clean
+* professional
+* easy to read
+
+Make the webcam and image areas large enough for weld inspection.
+
+---
+
+# 37. RESPONSIVE DESIGN
+
+On desktop:
+
+```text
+Original Image | Detection Result
+```
+
+On smaller screens:
+
+```text
+Original Image
+
+Detection Result
+```
+
+The application must remain usable.
+
+---
+
+# 38. LOADING INDICATOR
+
+When image inference is running:
+
+```text
+Running YOLO weld inspection...
+```
+
+Display a loading indicator.
+
+Disable the Inspect button while processing.
+
+Re-enable it when processing is finished.
+
+---
+
+# 39. DETECTION COUNT
+
+Display:
+
+```text
+Objects Detected: 1
+```
+
+or:
+
+```text
+Welds Detected: 3
+```
+
+Use terminology appropriate to the actual model output.
+
+---
+
+# 40. INSPECTION SUMMARY
+
+After image detection, show a summary:
+
+```text
+INSPECTION SUMMARY
+
+Overall Result: BAD WELD
+
+Welds Detected: 2
+
+Good Welds: 1
+
+Bad Welds: 1
+
+Highest Confidence: 96.42%
+```
+
+If the model detects only one weld, the summary should remain simple.
+
+---
+
+# 41. NO-DETECTION BEHAVIOR
+
+If YOLO detects nothing:
+
+Do NOT display:
+
+```text
+GOOD WELD
+```
+
+Instead:
+
+```text
+NO WELD DETECTED
+```
+
+Explain:
+
+```text
+No weld was detected above the configured confidence threshold.
+```
+
+---
+
+# 42. MULTIPLE WELDS
+
+The application should support images containing multiple weld regions.
+
+Example:
+
+```text
+Weld #1 → GOOD WELD → 97.2%
+
+Weld #2 → GOOD WELD → 94.6%
+
+Weld #3 → BAD WELD → 91.8%
+
+OVERALL RESULT → BAD WELD
+```
+
+Use:
+
+```text
+Any BAD detection → Overall BAD
+No BAD + at least one GOOD → Overall GOOD
+No detections → NO WELD DETECTED
+```
+
+---
+
+# 43. LOCALHOST
+
+The final application must run locally.
+
+Use:
+
+```bash
+python app.py
+```
+
+Then open:
+
+```text
+http://localhost:5000
+```
+
+Do not require:
+
+* cloud deployment
+* AWS
+* Azure
+* Google Cloud
+* Docker
+* Kubernetes
+
+unless specifically needed.
+
+The first version should be a simple local application.
+
+---
+
+# 44. REQUIREMENTS.TXT
+
+Create:
+
+```text
+requirements.txt
+```
+
+Include only the packages actually required.
+
+At minimum, use compatible packages for:
+
+```text
+Flask
+Ultralytics
+OpenCV
+NumPy
+Pillow
+```
+
+Do not unnecessarily add large frameworks.
+
+---
+
+# 45. README
+
+Create a detailed:
+
+```text
+README.md
+```
+
+Include:
+
+## Project Overview
+
+Explain that this application performs AI-based weld quality inspection using an existing YOLO model.
+
+## Prerequisites
+
+Explain:
+
+```text
+Python
+pip
+browser
+webcam
+```
+
+Optional:
+
+```text
+NVIDIA GPU + CUDA
+```
+
+---
+
+# 46. INSTALLATION
+
+Provide exact commands.
+
+Windows:
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Mac/Linux:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+---
+
+# 47. MODEL INSTALLATION
+
+Explain:
+
+```text
+models/
+└── best.pt
+```
+
+The README must clearly state:
+
+> Copy your existing trained `best.pt` into the `models` directory.
+
+Example:
+
+```text
+weld_quality_yolo/
+│
+├── models/
+│   └── best.pt
+```
+
+---
+
+# 48. RUNNING
+
+Provide:
+
+```bash
+python app.py
+```
+
+Then:
+
+```text
+http://localhost:5000
+```
+
+---
+
+# 49. WEBCAM REQUIREMENTS
+
+Explain that the browser will request permission to access the webcam.
+
+The user must select:
+
+```text
+Allow
+```
+
+when prompted.
+
+Because the application runs on localhost, browser camera APIs should be supported by modern browsers.
+
+---
+
+# 50. TESTING
+
+After creating the application, actually test it.
+
+## TEST 1 — Backend startup
+
+Run:
+
+```bash
+python app.py
+```
+
+Verify there are no startup errors.
+
+## TEST 2 — Model loading
+
+Verify:
+
+```text
+best.pt
+```
+
+loads successfully.
+
+## TEST 3 — Model classes
+
+Print/log the model's class names.
+
+Verify the Good/Bad mapping.
+
+## TEST 4 — Homepage
+
+Open:
+
+```text
+http://localhost:5000
+```
+
+Verify the page loads.
+
+## TEST 5 — Image upload
+
+Upload a real weld image.
+
+Verify YOLO inference occurs.
+
+## TEST 6 — Good weld
+
+Test a known good-weld image.
+
+Verify the result is displayed correctly according to the model.
+
+## TEST 7 — Bad weld
+
+Test a known bad-weld image.
+
+Verify the result is displayed correctly according to the model.
+
+## TEST 8 — No detection
+
+Test an image where no weld is detected.
+
+Verify:
+
+```text
+NO WELD DETECTED
+```
+
+## TEST 9 — Webcam
+
+Open webcam.
+
+Verify live video appears.
+
+## TEST 10 — Webcam YOLO
+
+Start inspection.
+
+Verify YOLO processes actual frames.
+
+## TEST 11 — Stop
+
+Stop inspection.
+
+Verify inference stops.
+
+## TEST 12 — Close camera
+
+Close webcam.
+
+Verify the camera is released.
+
+---
+
+# 51. IMPORTANT DEBUGGING INSTRUCTION
+
+If something does not work:
+
+Do not simply tell me that it failed.
+
+Diagnose and fix it.
+
+Follow this process:
+
+```text
+Identify error
+      ↓
+Read traceback
+      ↓
+Determine root cause
+      ↓
+Modify code
+      ↓
+Run again
+      ↓
+Test again
+      ↓
+Confirm fix
+```
+
+Do not hide exceptions.
+
+---
+
+# 52. MODEL COMPATIBILITY
+
+Use the currently installed Ultralytics API correctly.
+
+Do not assume an outdated YOLO API.
+
+First determine how `best.pt` should be loaded.
+
+If the model is compatible with:
+
+```python
+from ultralytics import YOLO
+model = YOLO("models/best.pt")
+```
+
+use that approach.
+
+If there is a compatibility issue, diagnose it and provide the appropriate solution.
+
+Do not retrain the model.
+
+---
+
+# 53. IMPORTANT INDUSTRIAL INSPECTION RULE
+
+This application is a **visual inspection assistant**.
+
+Do not claim that the system guarantees manufacturing quality or replaces a certified quality-control process.
+
+Display the AI result clearly as:
+
+```text
+AI INSPECTION RESULT
+```
+
+The application should not make unsupported safety or engineering claims.
+
+---
+
+# 54. FUTURE CUSTOMIZATION
+
+Design the application so that it can later support:
+
+```text
+Good Weld
+Bad Weld
+Crack
+Porosity
+Undercut
+Spatter
+Incomplete Weld
+Other Weld Defects
+```
+
+However, ONLY display classes that actually exist in `best.pt`.
+
+Do not invent classes.
+
+---
+
+# 55. OPTIONAL ENHANCEMENTS
+
+If they can be implemented without making the application unnecessarily complex, add:
+
+### Confidence threshold slider
+
+Allow the user to adjust:
+
+```text
+Confidence: 25%
+```
+
+For example:
+
+```text
+0.10 → 1.00
+```
+
+When changed, use the new threshold for inference.
+
+### Detection count
+
+Display:
+
+```text
+Welds Detected: X
+```
+
+### Model information
+
+Display:
+
+```text
+Model: best.pt
+Device: CPU/GPU
+```
+
+### Clear button
+
+Provide:
+
+```text
+Clear Results
+```
+
+to reset the inspection.
+
+---
+
+# 56. FINAL UI REQUIREMENT
+
+The main page should clearly communicate:
+
+```text
+WELD QUALITY INSPECTION
+YOLO COMPUTER VISION
+
+Upload a weld image or use your webcam
+to inspect weld quality using your trained YOLO model.
+```
+
+Then provide two clearly separated workflows:
+
+```text
+┌──────────────────────────────────────────────┐
+│              IMAGE INSPECTION                │
+│                                              │
+│       [ Choose Weld Image ]                  │
+│       [ Inspect Weld ]                       │
+│                                              │
+│       Original → YOLO Result                 │
+│                                              │
+│       AI INSPECTION RESULT                   │
+│       ✓ GOOD WELD                            │
+└──────────────────────────────────────────────┘
+
+
+┌──────────────────────────────────────────────┐
+│               LIVE INSPECTION                │
+│                                              │
+│              [ Webcam View ]                 │
+│                                              │
+│ [Open] [Start] [Stop] [Close]               │
+│                                              │
+│       LIVE AI INSPECTION                     │
+│       ✗ BAD WELD                             │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+# 57. FINAL ANTIGRAVITY EXECUTION INSTRUCTION
+
+Do not stop at generating a design.
+
+Actually create the complete application.
+
+Your workflow must be:
+
+```text
+1. Inspect the existing project
+2. Locate/verify best.pt
+3. Inspect model class names
+4. Create the Flask application
+5. Create the YOLO inference module
+6. Create image-upload functionality
+7. Create webcam functionality
+8. Create real-time frame inference
+9. Create Good/Bad decision logic
+10. Create bounding-box visualization
+11. Create confidence display
+12. Create professional frontend
+13. Create error handling
+14. Create requirements.txt
+15. Create README.md
+16. Run the application
+17. Test the API
+18. Test image detection
+19. Test webcam
+20. Fix any errors
+21. Verify localhost operation
+```
+
+---
+
+# 58. FINAL SUCCESS CRITERIA
+
+The project is considered complete ONLY when all of the following work:
+
+* [ ] Flask starts successfully
+* [ ] `best.pt` loads successfully
+* [ ] Model class names are detected correctly
+* [ ] Homepage loads at `http://localhost:5000`
+* [ ] User can upload an image
+* [ ] YOLO performs real inference
+* [ ] Bounding boxes are displayed
+* [ ] Class names are displayed
+* [ ] Confidence percentages are displayed
+* [ ] GOOD WELD result is displayed when appropriate
+* [ ] BAD WELD result is displayed when appropriate
+* [ ] NO WELD DETECTED is displayed when appropriate
+* [ ] Multiple weld detections are supported
+* [ ] Webcam can be opened
+* [ ] Browser camera permission works
+* [ ] Webcam frames are processed by YOLO
+* [ ] Live Good/Bad results are displayed
+* [ ] Start Inspection works
+* [ ] Stop Inspection works
+* [ ] Close Webcam releases the camera
+* [ ] Invalid images are handled
+* [ ] Missing model is handled
+* [ ] CPU inference works
+* [ ] GPU inference works if available
+* [ ] README contains complete setup instructions
+* [ ] Application runs entirely on localhost
+
+---
+
+# FINAL INSTRUCTION TO ANTIGRAVITY
+
+**Build the complete working Weld Quality Inspection application now.**
+
+Use my existing:
+
+```text
+models/best.pt
+```
+
+as the YOLO inference model.
+
+**Do not retrain the model.**
+
+**Do not create fake detections.**
+
+**Do not use placeholder results.**
+
+**Do not replace my model with another model.**
+
+Build the application around my existing trained model.
+
+The final command must be:
+
+```bash
+python app.py
+```
+
+and the application must be available at:
+
+```text
+http://localhost:5000
+```
+
+The primary objective is a reliable local **GOOD WELD vs BAD WELD YOLO inspection web application with both image upload and live webcam detection.**
